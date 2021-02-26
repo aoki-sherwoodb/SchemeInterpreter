@@ -5,82 +5,166 @@
 #include <stdio.h>
 #include <assert.h>
 #include "linkedlist.h"
-#include "value.h"
+#include "talloc.h"
 
 // Create a new NULL_TYPE value node.
 Value *makeNull() {
-  Value *nullNode;
-  nullNode.type = NULL_TYPE;
+  Value *nullNode = talloc(sizeof(Value));
+  nullNode->type = NULL_TYPE;
   return nullNode;
 }
 
 // Create a new CONS_TYPE value node.
 Value *cons(Value *newCar, Value *newCdr) {
-  Value *consCell;
-  consCell.type = CONS_TYPE;
-  consCell.car = newCar;
-  consCell.cdr = newCdr;
+  Value *consCell = talloc(sizeof(Value));
+  consCell->type = CONS_TYPE;
+  consCell->c.car = newCar;
+  consCell->c.cdr = newCdr;
   return consCell;
 }
 
-// Display the contents of the linked list to the screen in some kind of
-// readable format
+//prints the contents of a value that is not a list/cons cell
+void displayValue(Value *item) {
+  assert(item->type != PTR_TYPE);
+  assert(item->type != CONS_TYPE);
+  switch (item->type) {
+    case INT_TYPE:
+      printf("%i", item->i);
+      break;
+    case DOUBLE_TYPE:
+      printf("%.2f", item->d);
+      break;
+    case STR_TYPE:
+      printf("%s", item->s);
+      break;
+    case PTR_TYPE:
+      break;
+    case CONS_TYPE:
+      break;
+    case NULL_TYPE:
+      break;
+    case OPEN_TYPE:
+      printf("(");
+    case CLOSE_TYPE:
+      printf(")");
+    case BOOL_TYPE:
+      if (item->i == 0) {
+        printf("#f:boolean\n");
+      } else {
+        printf("#t:boolean\n");
+      }
+      break;
+    case SYMBOL_TYPE:
+      printf("%s", item->s);
+      break;
+    case OPENBRACKET_TYPE:
+      printf("[");
+      break;
+    case CLOSEBRACKET_TYPE:
+      printf("]");
+      break;
+    case DOT_TYPE:
+      printf(".");
+      break;
+    case SINGLEQUOTE_TYPE:
+      printf("'");
+      break;
+    case VOID_TYPE:
+      break;
+  }
+}
+
+// Display the contents of the linked list to the screen in some kind of readable format
 void display(Value *list) {
   printf("(");
-  assert(list.type = CONS_TYPE)
+  if (list->type != NULL_TYPE) {
+    displayValue(car(list));
+    while (cdr(list)->type == CONS_TYPE) {
+      list = cdr(list);
+      printf(" ");
+      displayValue(car(list));
+    }
+    if (!isNull(cdr(list))) {
+      printf(" . ");
+      displayValue(cdr(list));
+    }
+  }
+  printf(")\n");
 }
 
-void displayConsCellContents(Value *cell) {
-
+// Return a new list that is the reverse of the one that is passed in. No stored
+// data within the linked list should be duplicated; rather, a new linked list
+// of CONS_TYPE nodes should be created, that point to items in the original
+// list.
+Value *reverse(Value *list) {
+  Value *reversedList = makeNull();
+  if (list->type == NULL_TYPE) {
+    return reversedList;
+  }
+  reversedList = cons(car(list), reversedList);
+  while (!isNull(cdr(list))) {
+    list = cdr(list);
+    reversedList = cons(car(list), reversedList);
+  }
+  return reversedList;
 }
 
-switch (val.type) {
-case INT_TYPE:
-    // do something with val.i
-    break;
-case DOUBLE_TYPE:
-    // do something with val.d
-    break;
-...
+// Utility to make it less typing to get car value. Use assertions to make sure that this is a legitimate operation.
+Value *car(Value *list) {
+  assert(list != NULL);
+  assert(list->type == CONS_TYPE);
+  return list->c.car;
 }
 
-// Return a new list that is the reverse of the one that is passed in. All
-// content within the list should be duplicated; there should be no shared
-// memory whatsoever between the original list and the new one.
-//
-// FAQ: What if there are nested lists inside that list?
-// ANS: There won't be for this assignment. There will be later, but that will
-// be after we've got an easier way of managing memory.
-Value *reverse(Value *list);
+// Utility to make it less typing to get cdr value. Use assertions to make sure that this is a legitimate operation.
+Value *cdr(Value *list)  {
+  assert(list != NULL);
+  assert(list->type == CONS_TYPE);
+  return list->c.cdr;
+}
 
-// Frees up all memory directly or indirectly referred to by list. This includes strings.
-//
-// FAQ: What if a string being pointed to is a string literal? That throws an
-// error when freeing.
-//
-// ANS: Don't put a string literal into the list in the first place. All strings
-// added to this list should be able to be freed by the cleanup function.
-//
-// FAQ: What if there are nested lists inside that list?
-//
-// ANS: There won't be for this assignment. There will be later, but that will
-// be after we've got an easier way of managing memory.
-void cleanup(Value *list);
+// Utility to check if pointing to a NULL_TYPE value. Use assertions to make sure that this is a legitimate operation.
+bool isNull(Value *value) {
+  assert(value != NULL);
+  if (value->type == NULL_TYPE) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
 
-// Utility to make it less typing to get car value. Use assertions to make sure
-// that this is a legitimate operation.
-// Make sure have <assert.h> in your #include statements in linkedlist.c in order
-// to use assert (see assignment for more details).
-Value *car(Value *list);
+// Measure length of list. Use assertions to make sure that this is a legitimate operation.
+int length(Value *value) {
+  assert(value != NULL);
+  int length = 0;
+  if (value->type == NULL_TYPE) {
+    return length;
+  }
+  length++;
+  assert(value->type == CONS_TYPE);
+  while (!isNull(cdr(value))) {
+    length++;
+    value = cdr(value);
+  }
+  return length;
+}
 
-// Utility to make it less typing to get cdr value. Use assertions to make sure
-// that this is a legitimate operation.
-Value *cdr(Value *list);
-
-// Utility to check if pointing to a NULL_TYPE value. Use assertions to make sure
-// that this is a legitimate operation.
-bool isNull(Value *value);
-
-// Measure length of list. Use assertions to make sure that this is a legitimate
-// operation.
-int length(Value *value);
+// int main() {
+//   Value *car1 = malloc(sizeof(Value));
+//   car1->type = INT_TYPE;
+//   car1->i = 2;
+//   Value *car2 = malloc(sizeof(Value));
+//   car2->type = DOUBLE_TYPE;
+//   car2->d = 3.0;
+//   Value *car3 = malloc(sizeof(Value));
+//   car3->type = STR_TYPE;
+//   car3->s = malloc(sizeof(char) * 9);
+//   strcpy(car3->s, "Segfault");
+//   Value *head = cons(car1, cons(car2, cons(car3, makeNull())));
+//   display(head);
+//   Value *reverseHead = reverse(head);
+//   display(reverseHead);
+//   printf("%i\n",length(head));
+//   cleanup(head);
+//   cleanup(reverseHead);
+// }
