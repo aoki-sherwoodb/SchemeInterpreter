@@ -199,7 +199,7 @@ Value *tokenize() {
             char nextChar = (char)fgetc(stdin);
             ungetc(nextChar, stdin);
             ungetc(charRead, stdin);
-            if (isspace(nextChar)) {
+            if (isspace(nextChar) || nextChar == ')') {
                 list = addSymbolToken(list);
             } else {
                 list = addNumberToken(list);
@@ -295,6 +295,10 @@ void displayTokens(Value *list) {
             case NULL_TYPE:
                 break;
             case VOID_TYPE:
+                break;
+            case CLOSURE_TYPE:
+                break;
+            case PRIMITIVE_TYPE:
                 break;
         }
         Value *temp = list;
